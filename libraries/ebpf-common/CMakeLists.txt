@@ -6,4 +6,6 @@
 # the LICENSE file found in the root directory of this source tree.
 #
 
-add_subdirectory("src")
+if(NOT TARGET "ebpf" AND NOT TARGET "utils" AND NOT TARGET "error")
+  add_subdirectory("src")
+endif()
