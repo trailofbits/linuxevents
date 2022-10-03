@@ -63,7 +63,7 @@ static void capturePath(struct pt_regs *ctx, u64 session_id,
     return;
   }
 
-  for (u64 i = 0; i < 32; i++) {
+  for (u64 i = 0; i < 64; i++) {
     struct dentry current_dentry = {};
     if (bpf_probe_read_kernel(&current_dentry, sizeof(struct dentry),
                               current_dentry_ptr) != 0) {
@@ -222,7 +222,7 @@ static void captureArgumentList(struct pt_regs *ctx, u64 session_id) {
 
   const char *current_argument = arg_start;
 
-  for (u64 i = 0; i < 32; ++i) {
+  for (u64 i = 0; i < 64; ++i) {
     if (current_argument >= arg_end) {
       break;
     }

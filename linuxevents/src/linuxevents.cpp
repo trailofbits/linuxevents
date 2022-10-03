@@ -14,7 +14,7 @@
 #include <tob/ebpf/bpfmap.h>
 #include <tob/ebpf/ebpf_utils.h>
 #include <tob/ebpf/iclangcompiler.h>
-#include <tob/ebpf/iperfevent.h>
+#include <tob/ebpf/ievent.h>
 #include <tob/ebpf/perfeventarray.h>
 #include <tob/utils/bufferreader.h>
 
@@ -43,7 +43,7 @@ const std::string kVmlinuxBtfFilePath{"/sys/kernel/btf/vmlinux"};
 
 struct LinuxEvents::PrivateData final {
   ebpf::PerfEventArray::Ref perf_event_array;
-  ebpf::IPerfEvent::Ref perf_event;
+  ebpf::IEvent::Ref perf_event;
   ScratchSpaceMap::Ref scratch_space_map;
   SessionCounterMap::Ref session_counter_map;
   std::unordered_map<std::uint64_t, EventContext> event_context_map;
@@ -251,7 +251,7 @@ LinuxEvents::LinuxEvents() : d(new PrivateData) {
   const auto &program = program_map.at("section_sched_process_exec");
 
   auto perf_event_exp =
-      ebpf::IPerfEvent::createTracepoint("sched", "sched_process_exec");
+      ebpf::IEvent::createTracepoint("sched", "sched_process_exec");
 
   if (!perf_event_exp.succeeded()) {
     throw perf_event_exp.error();
