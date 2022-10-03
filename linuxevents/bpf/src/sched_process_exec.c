@@ -58,15 +58,15 @@ static void capturePath(struct pt_regs *ctx, u64 session_id,
   struct dentry *current_dentry_ptr = f_path->dentry;
 
   struct vfsmount current_vfsmount;
-  if (bpf_probe_read_kernel(&current_vfsmount, sizeof(struct vfsmount),
-                            current_vfsmount_ptr) != 0) {
+  if (bpf_probe_read(&current_vfsmount, sizeof(struct vfsmount),
+                     current_vfsmount_ptr) != 0) {
     return;
   }
 
   for (u64 i = 0; i < 64; i++) {
     struct dentry current_dentry = {};
-    if (bpf_probe_read_kernel(&current_dentry, sizeof(struct dentry),
-                              current_dentry_ptr) != 0) {
+    if (bpf_probe_read(&current_dentry, sizeof(struct dentry),
+                       current_dentry_ptr) != 0) {
       return;
     }
 
@@ -76,9 +76,9 @@ static void capturePath(struct pt_regs *ctx, u64 session_id,
                            offsetof(struct mount, mnt));
 
       struct dentry *mount_point_dentry_ptr = 0;
-      if (bpf_probe_read_kernel_struct_member(struct mount, mnt_mountpoint,
-                                              current_mount_ptr,
-                                              &mount_point_dentry_ptr) != 0) {
+      if (bpf_probe_read_struct_member(struct mount, mnt_mountpoint,
+                                       current_mount_ptr,
+                                       &mount_point_dentry_ptr) != 0) {
         return;
       }
 
@@ -89,9 +89,9 @@ static void capturePath(struct pt_regs *ctx, u64 session_id,
       current_dentry_ptr = mount_point_dentry_ptr;
 
       struct mount *parent_mount_ptr = 0;
-      if (bpf_probe_read_kernel_struct_member(struct mount, mnt_parent,
-                                              current_mount_ptr,
-                                              &parent_mount_ptr) != 0) {
+      if (bpf_probe_read_struct_member(struct mount, mnt_parent,
+                                       current_mount_ptr,
+                                       &parent_mount_ptr) != 0) {
         return;
       }
 
@@ -104,16 +104,16 @@ static void capturePath(struct pt_regs *ctx, u64 session_id,
       }
 
       current_vfsmount_ptr = parent_vfsmount_ptr;
-      if (bpf_probe_read_kernel(&current_vfsmount, sizeof(struct vfsmount),
-                                current_vfsmount_ptr) != 0) {
+      if (bpf_probe_read(&current_vfsmount, sizeof(struct vfsmount),
+                         current_vfsmount_ptr) != 0) {
         break;
       }
 
     } else {
       current_dentry_ptr = current_dentry.d_parent;
 
-      long string_size = bpf_probe_read_kernel_str(
-          buffer->data, sizeof(buffer->data), current_dentry.d_name.name);
+      long string_size = bpf_probe_read_str(buffer->data, sizeof(buffer->data),
+                                            current_dentry.d_name.name);
 
       buffer->header.size = (u16)string_size;
 
@@ -136,20 +136,20 @@ static void captureExecutablePath(struct pt_regs *ctx, u64 session_id) {
   }
 
   struct mm_struct *mm = 0;
-  if (bpf_probe_read_kernel_struct_member(struct task_struct, mm, current_task,
-                                          &mm) != 0) {
+  if (bpf_probe_read_struct_member(struct task_struct, mm, current_task, &mm) !=
+      0) {
     return;
   }
 
   struct file *exe_file;
-  if (bpf_probe_read_kernel_struct_member(struct mm_struct, exe_file, mm,
-                                          &exe_file) != 0) {
+  if (bpf_probe_read_struct_member(struct mm_struct, exe_file, mm, &exe_file) !=
+      0) {
     return;
   }
 
   struct path f_path = {0};
-  if (bpf_probe_read_kernel_struct_member(struct file, f_path, exe_file,
-                                          &f_path) != 0) {
+  if (bpf_probe_read_struct_member(struct file, f_path, exe_file, &f_path) !=
+      0) {
     return;
   }
 
@@ -169,13 +169,13 @@ static void captureProcessInformation(struct pt_regs *ctx, u64 session_id) {
       (struct task_struct *)bpf_get_current_task();
 
   struct task_struct *real_parent = 0;
-  if (bpf_probe_read_kernel_struct_member(struct task_struct, real_parent,
-                                          current_task, &real_parent) != 0) {
+  if (bpf_probe_read_struct_member(struct task_struct, real_parent,
+                                   current_task, &real_parent) != 0) {
     return;
   }
 
-  if (bpf_probe_read_kernel_struct_member(struct task_struct, tgid, real_parent,
-                                          &buffer.parent_process_id) != 0) {
+  if (bpf_probe_read_struct_member(struct task_struct, tgid, real_parent,
+                                   &buffer.parent_process_id) != 0) {
     return;
   }
 
@@ -192,20 +192,20 @@ static void captureArgumentList(struct pt_regs *ctx, u64 session_id) {
   }
 
   struct mm_struct *mm = 0;
-  if (bpf_probe_read_kernel_struct_member(struct task_struct, mm, current_task,
-                                          &mm) != 0) {
+  if (bpf_probe_read_struct_member(struct task_struct, mm, current_task, &mm) !=
+      0) {
     return;
   }
 
   const char *arg_start = 0;
-  if (bpf_probe_read_kernel_struct_member(struct mm_struct, arg_start, mm,
-                                          &arg_start) != 0) {
+  if (bpf_probe_read_struct_member(struct mm_struct, arg_start, mm,
+                                   &arg_start) != 0) {
     return;
   }
 
   const char *arg_end = 0;
-  if (bpf_probe_read_kernel_struct_member(struct mm_struct, arg_end, mm,
-                                          &arg_end) != 0) {
+  if (bpf_probe_read_struct_member(struct mm_struct, arg_end, mm, &arg_end) !=
+      0) {
     return;
   }
 
@@ -227,8 +227,8 @@ static void captureArgumentList(struct pt_regs *ctx, u64 session_id) {
       break;
     }
 
-    long string_size = bpf_probe_read_user_str(
-        &buffer->data, sizeof(buffer->data), current_argument);
+    long string_size = bpf_probe_read_str(&buffer->data, sizeof(buffer->data),
+                                          current_argument);
 
     if (string_size == 0) {
       break;
@@ -256,32 +256,31 @@ static void captureCgroupPath(struct pt_regs *ctx, u64 session_id) {
   }
 
   struct css_set *cgroups = 0;
-  if (bpf_probe_read_kernel_struct_member(struct task_struct, cgroups,
-                                          current_task, &cgroups) != 0) {
+  if (bpf_probe_read_struct_member(struct task_struct, cgroups, current_task,
+                                   &cgroups) != 0) {
     return;
   }
 
   struct cgroup_subsys_state *subsys = 0;
-  if (bpf_probe_read_kernel_struct_member(struct css_set, subsys, cgroups,
-                                          &subsys) != 0) {
-    return;
-  }
-
-  struct cgroup *cgroup = 0;
-  if (bpf_probe_read_kernel_struct_member(struct cgroup_subsys_state, cgroup,
-                                          subsys, &cgroup) != 0) {
-    return;
-  }
-
-  struct kernfs_node *kn = 0;
-  if (bpf_probe_read_kernel_struct_member(struct cgroup, kn, cgroup, &kn) !=
+  if (bpf_probe_read_struct_member(struct css_set, subsys, cgroups, &subsys) !=
       0) {
     return;
   }
 
+  struct cgroup *cgroup = 0;
+  if (bpf_probe_read_struct_member(struct cgroup_subsys_state, cgroup, subsys,
+                                   &cgroup) != 0) {
+    return;
+  }
+
+  struct kernfs_node *kn = 0;
+  if (bpf_probe_read_struct_member(struct cgroup, kn, cgroup, &kn) != 0) {
+    return;
+  }
+
   struct kernfs_node *parent_kn = 0;
-  if (bpf_probe_read_kernel_struct_member(struct kernfs_node, parent, kn,
-                                          &parent_kn) != 0) {
+  if (bpf_probe_read_struct_member(struct kernfs_node, parent, kn,
+                                   &parent_kn) != 0) {
     return;
   }
 
@@ -297,10 +296,10 @@ static void captureCgroupPath(struct pt_regs *ctx, u64 session_id) {
   buffer->header.buffer_id = (u16)CgroupPathArrayEntry;
 
   const char *parent_name = 0;
-  if (bpf_probe_read_kernel_struct_member(struct kernfs_node, name, parent_kn,
-                                          &parent_name) == 0) {
-    long string_size = bpf_probe_read_kernel_str(
-        buffer->data, sizeof(buffer->data), parent_name);
+  if (bpf_probe_read_struct_member(struct kernfs_node, name, parent_kn,
+                                   &parent_name) == 0) {
+    long string_size =
+        bpf_probe_read_str(buffer->data, sizeof(buffer->data), parent_name);
 
     buffer->header.size = (u16)string_size;
 
@@ -313,10 +312,9 @@ static void captureCgroupPath(struct pt_regs *ctx, u64 session_id) {
   }
 
   const char *name = 0;
-  if (bpf_probe_read_kernel_struct_member(struct kernfs_node, name, kn,
-                                          &name) == 0) {
+  if (bpf_probe_read_struct_member(struct kernfs_node, name, kn, &name) == 0) {
     long string_size =
-        bpf_probe_read_kernel_str(buffer->data, sizeof(buffer->data), name);
+        bpf_probe_read_str(buffer->data, sizeof(buffer->data), name);
 
     buffer->header.size = (u16)string_size;
 
