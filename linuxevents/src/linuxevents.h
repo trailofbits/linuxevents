@@ -23,7 +23,7 @@ private:
   struct PrivateData;
   std::unique_ptr<PrivateData> d;
 
-  LinuxEvents();
+  LinuxEvents(std::uint32_t perf_output_size);
 
   friend class ILinuxEvents;
 };

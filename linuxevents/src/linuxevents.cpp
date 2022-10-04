@@ -187,7 +187,7 @@ LinuxEvents::processEvents(ErrorCounters &error_counters) {
   return event_list;
 }
 
-LinuxEvents::LinuxEvents() : d(new PrivateData) {
+LinuxEvents::LinuxEvents(std::uint32_t perf_output_size) : d(new PrivateData) {
   d->read_buffer.resize(kScratchSpaceSize);
 
   auto compiler_exp = ebpf::IClangCompiler::create(kVmlinuxBtfFilePath);
@@ -197,7 +197,7 @@ LinuxEvents::LinuxEvents() : d(new PrivateData) {
 
   auto compiler = compiler_exp.takeValue();
 
-  auto perf_event_array_exp = ebpf::PerfEventArray::create(12);
+  auto perf_event_array_exp = ebpf::PerfEventArray::create(perf_output_size);
   if (!perf_event_array_exp.succeeded()) {
     throw perf_event_array_exp.error();
   }

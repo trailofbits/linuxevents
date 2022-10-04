@@ -50,7 +50,7 @@ void printEvent(const tob::linuxevents::ILinuxEvents::Event &event) {
 }
 
 int main() {
-  auto linux_events_exp = tob::linuxevents::ILinuxEvents::create();
+  auto linux_events_exp = tob::linuxevents::ILinuxEvents::create(12);
   if (!linux_events_exp.succeeded()) {
     std::cerr << "Failed to create the LinuxEvents object: "
               << linux_events_exp.error().message() << "\n";

@@ -12,9 +12,10 @@
 
 namespace tob::linuxevents {
 
-StringErrorOr<ILinuxEvents::Ptr> ILinuxEvents::create() {
+StringErrorOr<ILinuxEvents::Ptr>
+ILinuxEvents::create(std::uint32_t perf_output_size) {
   try {
-    return Ptr(new LinuxEvents());
+    return Ptr(new LinuxEvents(perf_output_size));
 
   } catch (const std::bad_alloc &) {
     return StringError::create("Memory allocation failure");
