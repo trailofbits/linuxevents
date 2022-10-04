@@ -19,7 +19,7 @@ namespace tob::linuxevents {
 class ILinuxEvents {
 public:
   using Ptr = std::unique_ptr<ILinuxEvents>;
-  static StringErrorOr<Ptr> create();
+  static StringErrorOr<Ptr> create(std::uint32_t perf_output_size);
 
   struct Event final {
     std::uint64_t ktime;
